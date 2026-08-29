@@ -24,8 +24,10 @@ class AuditLogListView(GenericAPIView):
 
         teams = self.request.user.memberships.values_list("team_id", flat=True)
         project_ids = Project.objects.filter(team_id__in=teams).values_list("id", flat=True)
+        # target_id is CharField; cast integer project IDs to strings for the query
+        str_project_ids = [str(pid) for pid in project_ids]
         return AuditLog.objects.filter(
-            Q(target_type="project", target_id__in=project_ids) | Q(actor_id=self.request.user.id)
+            Q(target_type="project", target_id__in=str_project_ids) | Q(actor_id=self.request.user.id)
         )
 
     def get(self, request, *args, **kwargs):

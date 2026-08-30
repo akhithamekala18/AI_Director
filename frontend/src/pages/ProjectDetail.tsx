@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   getProject,
   patchProject,
@@ -306,6 +306,16 @@ export function ProjectDetail() {
               </button>
             </div>
           )}
+        </section>
+
+        {/* Studio navigation */}
+        <section className="detail-section">
+          <h2>Studio</h2>
+          <div className="studio-nav">
+            <Link to={`/projects/${projectId}/research`} className="btn">
+              Research Review
+            </Link>
+          </div>
         </section>
 
         {/* Info section */}

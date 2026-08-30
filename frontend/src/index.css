@@ -652,3 +652,175 @@ textarea:focus {
   font-size: 0.875rem;
   cursor: pointer;
 }
+
+/* ---------------------------------------------------------------------------
+   Research Review Styles
+   --------------------------------------------------------------------------- */
+
+.research-summary {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.source-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--color-surface);
+}
+
+.source-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.source-title {
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.source-title:hover {
+  text-decoration: underline;
+}
+
+.source-credibility {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.source-snippet {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.source-url {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.gap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gap-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  background: var(--color-surface);
+}
+
+.gap-card.gap-contradiction {
+  border-left: 4px solid var(--color-danger);
+}
+
+.gap-card.gap-missing {
+  border-left: 4px solid #f59e0b;
+}
+
+.gap-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.gap-type {
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.85rem;
+}
+
+.gap-status {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.gap-description {
+  font-size: 0.9rem;
+}
+
+.rejection-form {
+  margin-top: 12px;
+}
+
+.rejection-form label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.rejection-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.text-success {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.text-muted {
+  color: var(--color-text-secondary);
+}
+
+.state-review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.state-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.state-revision {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.state-generating {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.state-draft {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.studio-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

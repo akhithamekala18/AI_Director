@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.settings_app",
     "apps.ai_orchestration",
+    "apps.research",
     "django_celery_results",
 ]
 

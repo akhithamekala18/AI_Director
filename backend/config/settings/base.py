@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.ai_orchestration",
     "apps.research",
     "apps.script",
+    "apps.character",
     "django_celery_results",
 ]
 

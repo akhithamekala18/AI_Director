@@ -30,3 +30,16 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
 }
+
+# Celery test configuration: run tasks synchronously
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# AI provider test configuration (mock, no real API calls)
+AI_PROVIDER = "openai"
+OPENAI_API_KEY = "test-key-not-real"
+OPENAI_MODEL = "gpt-4o"
+
+# Redis not required for unit tests
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "cache+memory://"

@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.notifications",
     "apps.settings_app",
+    "apps.ai_orchestration",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -139,6 +141,21 @@ CREDENTIAL_ENCRYPTION_KEY = os.environ.get("CREDENTIAL_ENCRYPTION_KEY", "change-
 # any upload path; publishing arrives only in B3). The following flag is never
 # set true by the foundation and exists so tests can assert no auto-publish.
 PUBLISHING_ENABLED = os.environ.get("PUBLISHING_ENABLED", "0") == "1"
+
+# --- Celery (DG-8: Celery + Redis) ----------------------------------------
+CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_CACHE_BACKEND = "django-cache"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# --- AI Provider (DG-7: OpenAI via httpx) -----------------------------------
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "openai")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+OPENAI_TIMEOUT = float(os.environ.get("OPENAI_TIMEOUT", "60"))
 
 LOGGING = {
     "version": 1,

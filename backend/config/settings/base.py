@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.research",
     "apps.script",
     "apps.character",
+    "apps.scene",
     "django_celery_results",
 ]
 

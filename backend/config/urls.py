@@ -14,4 +14,5 @@ urlpatterns = [
     path("api/projects/<int:pk>/research/", include("apps.research.urls")),
     path("api/projects/<int:pk>/script/", include("apps.script.urls")),
     path("api/projects/<int:pk>/character/", include("apps.character.urls")),
+    path("api/projects/<int:pk>/scene/", include("apps.scene.urls")),
 ]

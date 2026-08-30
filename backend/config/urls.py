@@ -16,4 +16,5 @@ urlpatterns = [
     path("api/projects/<int:pk>/character/", include("apps.character.urls")),
     path("api/projects/<int:pk>/scene/", include("apps.scene.urls")),
     path("api/projects/<int:pk>/scene-media/", include("apps.scene_media.urls")),
+    path("api/projects/<int:pk>/regeneration/", include("apps.regeneration.urls")),
 ]

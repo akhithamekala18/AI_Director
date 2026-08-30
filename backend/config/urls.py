@@ -12,4 +12,5 @@ urlpatterns = [
     path("api/core/", include("apps.core.urls")),
     path("api/orchestration/", include("apps.ai_orchestration.urls")),
     path("api/projects/<int:pk>/research/", include("apps.research.urls")),
+    path("api/projects/<int:pk>/script/", include("apps.script.urls")),
 ]

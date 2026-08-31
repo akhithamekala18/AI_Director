@@ -327,6 +327,9 @@ export function ProjectDetail() {
             <Link to={`/projects/${projectId}/scene-media`} className="btn">
               Scene Media
             </Link>
+            <Link to={`/projects/${projectId}/tasks`} className="btn">
+              Generation Tasks
+            </Link>
           </div>
         </section>
 

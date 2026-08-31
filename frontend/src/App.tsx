@@ -15,6 +15,7 @@ import { ScriptEditor } from "./pages/ScriptEditor";
 import { CharacterSetup } from "./pages/CharacterSetup";
 import { SceneBuilderPage } from "./pages/SceneBuilder";
 import { SceneMediaControls } from "./pages/SceneMediaControls";
+import { GenerationTasks } from "./pages/GenerationTasks";
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/projects/:id/characters" element={<CharacterSetup />} />
             <Route path="/projects/:id/scenes" element={<SceneBuilderPage />} />
             <Route path="/projects/:id/scene-media" element={<SceneMediaControls />} />
+            <Route path="/projects/:id/tasks" element={<GenerationTasks />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

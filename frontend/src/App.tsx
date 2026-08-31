@@ -13,6 +13,7 @@ import { Notifications } from "./pages/Notifications";
 import { ResearchReview } from "./pages/ResearchReview";
 import { ScriptEditor } from "./pages/ScriptEditor";
 import { CharacterSetup } from "./pages/CharacterSetup";
+import { SceneBuilderPage } from "./pages/SceneBuilder";
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/projects/:id/research" element={<ResearchReview />} />
             <Route path="/projects/:id/script" element={<ScriptEditor />} />
             <Route path="/projects/:id/characters" element={<CharacterSetup />} />
+            <Route path="/projects/:id/scenes" element={<SceneBuilderPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

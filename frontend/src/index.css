@@ -1582,3 +1582,112 @@ textarea:focus {
 .job-actions {
   margin-top: 10px;
 }
+
+/* ---------------------------------------------------------------------------
+   Video Status + Preview UI (Task 45)
+   --------------------------------------------------------------------------- */
+
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.variation-chip {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2px 8px;
+  word-break: break-all;
+}
+
+.preview-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .preview-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.preview-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.preview-select-item.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.preview-frame {
+  width: 100%;
+  margin: 12px 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-frame-inner {
+  color: #fff;
+  text-align: center;
+  padding: 24px;
+}
+
+.preview-placeholder {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.preview-scene-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.preview-approval {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.preview-note {
+  margin-top: 10px;
+  font-size: 0.75rem;
+}
+

@@ -315,6 +315,9 @@ export function ProjectDetail() {
             <Link to={`/projects/${projectId}/research`} className="btn">
               Research Review
             </Link>
+            <Link to={`/projects/${projectId}/script`} className="btn">
+              Script Editor
+            </Link>
           </div>
         </section>
 

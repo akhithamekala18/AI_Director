@@ -19,6 +19,7 @@ import { GenerationTasks } from "./pages/GenerationTasks";
 import { VideoStatus } from "./pages/VideoStatus";
 import { Preview } from "./pages/Preview";
 import { Scheduler } from "./pages/Scheduler";
+import { PublishingApproval } from "./pages/PublishingApproval";
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/projects/:id/video" element={<VideoStatus />} />
             <Route path="/projects/:id/preview" element={<Preview />} />
             <Route path="/projects/:id/schedule" element={<Scheduler />} />
+            <Route path="/projects/:id/approvals" element={<PublishingApproval />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

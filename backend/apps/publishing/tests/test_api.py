@@ -330,3 +330,152 @@ class TestPayloadSnapshotOnApproval:
         resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/",
             data={}, format="json")
         assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+class TestRetrySchedule1515:
+    def test_wait_seconds(self):
+        from apps.publishing import services
+        assert services._get_retry_wait_seconds(1) == 0
+        assert services._get_retry_wait_seconds(2) == 60
+        assert services._get_retry_wait_seconds(3) == 300
+        assert services._get_retry_wait_seconds(4) == 900
+
+
+@pytest.mark.django_db
+class TestTransientRetrySchedule:
+    def test_transient_failure_sets_retry(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.TRANSIENT, "timeout")
+        attempt.refresh_from_db()
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "upload_failed"
+        assert attempt.next_retry_at is not None
+        assert attempt.failure_kind == "transient"
+
+
+@pytest.mark.django_db
+class TestPermanentFailure:
+    def test_permanent_failure_no_retry(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.PERMANENT, "expired auth")
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "failed_pending_user"
+        retryable, reason = services.can_retry_entry(scheduled_entry)
+        assert not retryable
+        # Entry is in failed_pending_user, not upload_failed, so can_retry rejects by status
+        assert "failed_pending_user" in reason
+
+
+@pytest.mark.django_db
+class TestIdempotentPublish:
+    def test_second_upload_rejected_after_success(self, auth_client, scheduled_entry):
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, True)
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "published"
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestMaxAttemptsExceeded:
+    def test_exhausted_retries_to_failed(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        for i in range(4):
+            attempt = UploadAttempt.objects.create(entry=scheduled_entry, attempt_no=i+1, status=UploadAttempt.Status.FAILED, failure_kind=UploadAttempt.FailureKind.TRANSIENT)
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.TRANSIENT, "timeout")
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "failed"
+        retryable, reason = services.can_retry_entry(scheduled_entry)
+        assert not retryable
+        # Entry is in failed, not upload_failed, so can_retry rejects by status
+        assert "failed" in reason
+
+
+@pytest.mark.django_db
+class TestRetryTrigger:
+    def test_trigger_retry(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.TRANSIENT, "timeout")
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "upload_failed"
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/retry/", data={}, format="json")
+        assert resp.status_code == 200
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "uploading"
+        assert scheduled_entry.upload_attempts.count() == 2
+
+    def test_retry_status(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.TRANSIENT, "timeout")
+        scheduled_entry.refresh_from_db()
+        resp = auth_client.get(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/retry-status/")
+        assert resp.status_code == 200
+        data = resp.json()["data"]["retry_status"]
+        assert data["total_attempts"] == 1
+        assert data["retryable"] is True
+
+
+@pytest.mark.django_db
+class TestApprovalRevalidationOnRetry:
+    def test_retry_blocked_without_approval(self, auth_client, scheduled_entry):
+        from apps.publishing.models import UploadAttempt, Approval
+        from apps.publishing import services
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/", data={}, format="json")
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/", data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        attempt = scheduled_entry.upload_attempts.first()
+        services.complete_upload_attempt(attempt, False, UploadAttempt.FailureKind.TRANSIENT, "timeout")
+        scheduled_entry.refresh_from_db()
+        Approval.objects.filter(entry=scheduled_entry).update(invalidated=True, invalidated_at=timezone.now())
+        retryable, reason = services.can_retry_entry(scheduled_entry)
+        assert not retryable
+        assert "approval" in reason.lower()

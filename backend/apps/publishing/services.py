@@ -123,19 +123,60 @@ def invalidate_approvals_for_entry(entry, reason="schedule_or_platform_changed")
         entry.save()
     return count
 
+# --- Retry helpers (Task 41, PRD D8) ---
+
+_MAX_ATTEMPTS = 4
+_RETRY_WAIT_SECONDS = [0, 60, 300, 900]  # 0/1/5/15 min
+
+def _has_successful_attempt(entry):
+    return entry.upload_attempts.filter(status=UploadAttempt.Status.SUCCESS).exists()
+
+def _get_retry_wait_seconds(attempt_no):
+    idx = min(attempt_no - 1, len(_RETRY_WAIT_SECONDS) - 1)
+    return _RETRY_WAIT_SECONDS[idx]
+
+def can_retry_entry(entry):
+    if entry.status != ScheduledEntry.Status.UPLOAD_FAILED:
+        return False, f"entry status is '{entry.status}', expected 'upload_failed'"
+    last_attempt = entry.upload_attempts.order_by('-attempt_no').first()
+    if last_attempt is None:
+        return False, 'no upload attempts exist'
+    if last_attempt.status == UploadAttempt.Status.SUCCESS:
+        return False, 'entry already has a successful upload (idempotency)'
+    if last_attempt.failure_kind == UploadAttempt.FailureKind.PERMANENT:
+        return False, 'permanent failure requires user action, not retry'
+    total_attempts = entry.upload_attempts.count()
+    if total_attempts >= _MAX_ATTEMPTS:
+        return False, f'max attempts ({_MAX_ATTEMPTS}) exceeded'
+    if last_attempt.next_retry_at is not None:
+        now = dj_tz.now()
+        if now < last_attempt.next_retry_at:
+            wait_secs = (last_attempt.next_retry_at - now).total_seconds()
+            return False, f'retry available in {int(wait_secs)} seconds'
+    if not is_approval_valid(entry):
+        return False, 'approval expired or missing - re-approval required'
+    return True, None
+
 def create_upload_attempt(user, entry):
     if entry.status != ScheduledEntry.Status.APPROVED:
-        raise DjangoValidationError(f"upload requires APPROVED status, current: '{entry.status}'")
+        raise DjangoValidationError(
+            f"upload requires APPROVED status, current: '{entry.status}'"
+        )
     if not is_approval_valid(entry):
         raise DjangoValidationError("upload requires a valid, unexpired approval")
+    if _has_successful_attempt(entry):
+        raise DjangoValidationError("entry already has a successful upload (idempotent)")
     attempt_no = entry.upload_attempts.count() + 1
-    if attempt_no > 4:
-        raise DjangoValidationError("maximum upload attempts (4) exceeded")
-    attempt = UploadAttempt.objects.create(entry=entry, attempt_no=attempt_no, status=UploadAttempt.Status.PENDING)
+    if attempt_no > _MAX_ATTEMPTS:
+        raise DjangoValidationError(f"maximum upload attempts ({_MAX_ATTEMPTS}) exceeded")
+    attempt = UploadAttempt.objects.create(
+        entry=entry, attempt_no=attempt_no, status=UploadAttempt.Status.PENDING,
+    )
     entry.status = ScheduledEntry.Status.UPLOADING
     entry.save()
     _audit(user, "upload_attempt_created", entry=entry, attempt=attempt)
     return attempt
+
 
 def complete_upload_attempt(attempt, success, failure_kind=UploadAttempt.FailureKind.NONE, error=""):
     attempt.finished_at = dj_tz.now()
@@ -143,18 +184,81 @@ def complete_upload_attempt(attempt, success, failure_kind=UploadAttempt.Failure
         attempt.status = UploadAttempt.Status.SUCCESS
         attempt.entry.status = ScheduledEntry.Status.PUBLISHED
         attempt.entry.save()
-    else:
-        attempt.status = UploadAttempt.Status.FAILED
-        attempt.failure_kind = failure_kind
-        attempt.error_message = error
-        entry = attempt.entry
-        total = entry.upload_attempts.count()  # noqa: F841
-        successful = entry.upload_attempts.filter(status=UploadAttempt.Status.SUCCESS).count()
-        if successful > 0:
+        attempt.save()
+        return attempt
+    attempt.status = UploadAttempt.Status.FAILED
+    attempt.failure_kind = failure_kind
+    attempt.error_message = error
+    entry = attempt.entry
+    total_attempts = entry.upload_attempts.count()
+    has_success = _has_successful_attempt(entry)
+    if has_success:
+        pass
+    elif failure_kind == UploadAttempt.FailureKind.PERMANENT:
+        entry.status = ScheduledEntry.Status.FAILED_PENDING_USER
+        entry.save()
+    elif failure_kind == UploadAttempt.FailureKind.TRANSIENT:
+        if total_attempts >= _MAX_ATTEMPTS:
             entry.status = ScheduledEntry.Status.FAILED
+            entry.save()
+        else:
+            wait_secs = _get_retry_wait_seconds(total_attempts)
+            attempt.next_retry_at = dj_tz.now() + timedelta(seconds=wait_secs)
+            entry.status = ScheduledEntry.Status.UPLOAD_FAILED
+            entry.save()
+    else:
+        if total_attempts >= _MAX_ATTEMPTS:
+            entry.status = ScheduledEntry.Status.FAILED
+            entry.save()
+        else:
+            wait_secs = _get_retry_wait_seconds(total_attempts)
+            attempt.next_retry_at = dj_tz.now() + timedelta(seconds=wait_secs)
+            entry.status = ScheduledEntry.Status.UPLOAD_FAILED
             entry.save()
     attempt.save()
     return attempt
+
+
+def trigger_retry(user, entry):
+    retryable, reason = can_retry_entry(entry)
+    if not retryable:
+        raise DjangoValidationError(f"retry not allowed: {reason}")
+    if not is_approval_valid(entry):
+        raise DjangoValidationError("approval expired or missing - re-approval required")
+    attempt_no = entry.upload_attempts.count() + 1
+    attempt = UploadAttempt.objects.create(
+        entry=entry, attempt_no=attempt_no, status=UploadAttempt.Status.PENDING,
+    )
+    entry.status = ScheduledEntry.Status.UPLOADING
+    entry.save()
+    _audit(user, "retry_triggered", entry=entry, attempt=attempt,
+           reason=f"retry_attempt_{attempt_no}")
+    return attempt
+
+
+def get_retry_status(entry):
+    attempts = entry.upload_attempts.order_by("attempt_no")
+    total = attempts.count()
+    successful = attempts.filter(status=UploadAttempt.Status.SUCCESS).count()
+    failed = attempts.filter(status=UploadAttempt.Status.FAILED).count()
+    last_attempt = attempts.last()
+    if entry.status == ScheduledEntry.Status.UPLOAD_FAILED:
+        retryable, reason = can_retry_entry(entry)
+    else:
+        retryable, reason = False, f"status is '{entry.status}'"
+    return {
+        "total_attempts": total,
+        "successful": successful,
+        "failed": failed,
+        "max_attempts": _MAX_ATTEMPTS,
+        "retryable": retryable,
+        "retry_reason": reason if not retryable else None,
+        "next_retry_at": last_attempt.next_retry_at.isoformat() if last_attempt and last_attempt.next_retry_at else None,
+        "last_failure_kind": last_attempt.failure_kind if last_attempt else None,
+        "last_error": last_attempt.error_message if last_attempt else None,
+    }
+
+
 
 def get_publishing_history(user, project):
     team_ids = user.memberships.values_list("team_id", flat=True)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.urls import path
-from .views import (PostCreateView, PostListView, PostDetailView, EntryCreateView, EntryListView, EntryCancelView, ApprovalView, RejectionView, ApprovalListView, UploadView, PublishingHistoryView, RescheduleEntryView, ChangePlatformView)
+from .views import (PostCreateView, PostListView, PostDetailView, EntryCreateView, EntryListView, EntryCancelView, ApprovalView, RejectionView, ApprovalListView, UploadView, PublishingHistoryView, RescheduleEntryView, ChangePlatformView, RetryEntryView, RetryStatusView)
 
 urlpatterns = [
     path("posts/", PostListView.as_view(), name="post-list"),
@@ -16,4 +16,6 @@ urlpatterns = [
     path("history/", PublishingHistoryView.as_view(), name="publishing-history"),
     path("entries/<int:entry_id>/reschedule/", RescheduleEntryView.as_view(), name="entry-reschedule"),
     path("entries/<int:entry_id>/change-platform/", ChangePlatformView.as_view(), name="entry-change-platform"),
+    path("entries/<int:entry_id>/retry/", RetryEntryView.as_view(), name="entry-retry"),
+    path("entries/<int:entry_id>/retry-status/", RetryStatusView.as_view(), name="entry-retry-status"),
 ]

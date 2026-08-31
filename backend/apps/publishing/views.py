@@ -227,3 +227,26 @@ class RecheckApprovalsView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         expired = services.recheck_expired_approvals(request.user)
         return ok({"expired_count": expired})
+class RetryEntryView(GenericAPIView):
+    serializer_class = ScheduledEntrySerializer
+    permission_classes = [HasCapability]
+    capability = "manage_projects"
+
+    def post(self, request, *args, **kwargs):
+        entry = services.get_entry(request.user, kwargs["entry_id"])
+        if not entry:
+            raise NotFound("entry not found")
+        attempt = _run(lambda: services.trigger_retry(request.user, entry))
+        return ok({"attempt": UploadAttemptSerializer(attempt).data})
+
+
+class RetryStatusView(GenericAPIView):
+    permission_classes = [HasCapability]
+    capability = "view_projects"
+
+    def get(self, request, *args, **kwargs):
+        entry = services.get_entry(request.user, kwargs["entry_id"])
+        if not entry:
+            raise NotFound("entry not found")
+        status = services.get_retry_status(entry)
+        return ok({"retry_status": status})

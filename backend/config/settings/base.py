@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.regeneration",
     "apps.video",
     "apps.thumbnail",
+    "apps.preview",
     "django_celery_results",
 ]
 

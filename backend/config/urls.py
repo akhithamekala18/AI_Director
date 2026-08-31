@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/audit/", include("apps.audit.urls")),
     path("api/notifications/", include("apps.notifications.urls")),
     path("api/settings/", include("apps.settings_app.urls")),
+    path("api/analytics/", include("apps.analytics.urls")),
     path("api/core/", include("apps.core.urls")),
     path("api/orchestration/", include("apps.ai_orchestration.urls")),
     path("api/projects/<int:pk>/research/", include("apps.research.urls")),

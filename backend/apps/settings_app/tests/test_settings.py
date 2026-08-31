@@ -61,3 +61,25 @@ def test_credential_at_rest_is_ciphertext(make_user):
     stored = StoredCredential.objects.get(provider="p")
     assert stored.encrypted_value != "roundtrip-token"
     assert decrypt_secret(stored.encrypted_value) == "roundtrip-token"
+
+
+def test_publishing_preferences_get_then_patch(api_client):
+    client = api_client(role="Creator")
+    get = client.get("/api/settings/publishing-preferences/")
+    assert get.status_code == 200
+    data = get.json()["data"]["publishing_preferences"]
+    assert data["auto_approve_enabled"] is False
+    patch = client.patch("/api/settings/publishing-preferences/", {"auto_approve_enabled": True})
+    assert patch.status_code == 200
+    assert patch.json()["data"]["publishing_preferences"]["auto_approve_enabled"] is True
+
+def test_notification_preferences_get_then_patch(api_client):
+    client = api_client(role="Creator")
+    get = client.get("/api/settings/notification-preferences/")
+    assert get.status_code == 200
+    data = get.json()["data"]["notification_preferences"]
+    assert data["approval_requests"] is True
+    patch = client.patch("/api/settings/notification-preferences/", {"reminders": False})
+    assert patch.status_code == 200
+    assert patch.json()["data"]["notification_preferences"]["reminders"] is False
+    assert patch.json()["data"]["notification_preferences"]["approval_requests"] is True

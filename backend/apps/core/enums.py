@@ -52,3 +52,7 @@ class AuditAction(str, Enum):
 class NotificationType(str, Enum):
     STATUS = "status"
     APPROVAL_REQUEST = "approval_request"
+    REMINDER = "reminder"
+    PUBLISH_OUTCOME = "publish_outcome"
+    PUBLISH_FAILURE = "publish_failure"
+    TEAM_ASSIGNMENT = "team_assignment"

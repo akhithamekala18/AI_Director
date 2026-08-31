@@ -39,3 +39,33 @@ def test_notification_mark_read(api_client):
     resp = client.post(f"/api/notifications/{notification.pk}/read/")
     assert resp.status_code == 200
     assert Notification.objects.get(pk=notification.pk).read is True
+
+
+def test_reminder_notification(make_user):
+    from apps.notifications.services import notify_reminder
+    user = make_user(username="notif_reminder")
+    notification = notify_reminder(user, "Publish soon", "entry", "42", "YouTube upload in 1h")
+    saved = Notification.objects.get(pk=notification.pk)
+    assert saved.type == "reminder"
+    assert saved.artifact_type == "entry"
+
+def test_publish_outcome_notification(make_user):
+    from apps.notifications.services import notify_publish_outcome
+    user = make_user(username="notif_outcome")
+    notification = notify_publish_outcome(user, "Published!", "entry", "99", "YouTube success")
+    saved = Notification.objects.get(pk=notification.pk)
+    assert saved.type == "publish_outcome"
+
+def test_publish_failure_notification(make_user):
+    from apps.notifications.services import notify_publish_failure
+    user = make_user(username="notif_failure")
+    notification = notify_publish_failure(user, "Upload failed", "entry", "55", "Auth expired")
+    saved = Notification.objects.get(pk=notification.pk)
+    assert saved.type == "publish_failure"
+
+def test_team_assignment_notification(make_user):
+    from apps.notifications.services import notify_team_assignment
+    user = make_user(username="notif_team")
+    notification = notify_team_assignment(user, "Assigned", "project", "7", "You have been assigned")
+    saved = Notification.objects.get(pk=notification.pk)
+    assert saved.type == "team_assignment"

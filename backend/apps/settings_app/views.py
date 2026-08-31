@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from apps.audit.services import record_audit
 from apps.core.enums import AuditAction
 from apps.core.response import ok
-from apps.settings_app.models import StoredCredential, UserSettings
-from apps.settings_app.serializers import StoredCredentialSerializer, UserSettingsSerializer
+from apps.settings_app.models import StoredCredential, UserSettings, PublishingPreferences, NotificationPreferences
+from apps.settings_app.serializers import StoredCredentialSerializer, UserSettingsSerializer, PublishingPreferencesSerializer, NotificationPreferencesSerializer
 from apps.settings_app.services import encrypt_secret
 
 
@@ -79,3 +79,35 @@ class CredentialRevokeView(GenericAPIView):
         credential.save(update_fields=["revoked"])
         record_audit(request.user, AuditAction.CREDENTIAL_REVOKED.value, target_type="credential", target_id=credential.id)
         return ok({"credential": StoredCredentialSerializer(credential).data})
+
+
+class PublishingPreferencesView(GenericAPIView):
+    serializer_class = PublishingPreferencesSerializer
+    permission_classes = [IsAuthenticated]
+    def get_object(self):
+        obj, _ = PublishingPreferences.objects.get_or_create(user=self.request.user)
+        return obj
+    def get(self, request, *args, **kwargs):
+        return ok({'publishing_preferences': self.get_serializer(self.get_object()).data})
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ok({'publishing_preferences': serializer.data})
+
+
+class NotificationPreferencesView(GenericAPIView):
+    serializer_class = NotificationPreferencesSerializer
+    permission_classes = [IsAuthenticated]
+    def get_object(self):
+        obj, _ = NotificationPreferences.objects.get_or_create(user=self.request.user)
+        return obj
+    def get(self, request, *args, **kwargs):
+        return ok({'notification_preferences': self.get_serializer(self.get_object()).data})
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ok({'notification_preferences': serializer.data})

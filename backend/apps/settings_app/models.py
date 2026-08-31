@@ -40,3 +40,31 @@ class StoredCredential(models.Model):
 
     def __str__(self):
         return f"credential:{self.id}:{self.provider}"
+
+
+class PublishingPreferences(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="publishing_preferences")
+    auto_approve_enabled = models.BooleanField(default=False)
+    default_posting_time = models.TimeField(null=True, blank=True)
+    cross_post_by_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name_plural = "Publishing preferences"
+    def __str__(self):
+        return f"publishing_prefs:{self.user_id}"
+
+
+class NotificationPreferences(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preferences")
+    approval_requests = models.BooleanField(default=True)
+    reminders = models.BooleanField(default=True)
+    publish_outcomes = models.BooleanField(default=True)
+    publish_failures = models.BooleanField(default=True)
+    team_assignments = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name_plural = "Notification preferences"
+    def __str__(self):
+        return f"notification_prefs:{self.user_id}"

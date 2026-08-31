@@ -187,3 +187,43 @@ class PendingApprovalsView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         entries = services.get_pending_approvals(request.user)
         return ok({"pending": self.get_serializer(entries, many=True).data})
+
+
+class RescheduleEntryView(GenericAPIView):
+    serializer_class = ScheduledEntrySerializer
+    permission_classes = [HasCapability]
+    capability = "manage_projects"
+    def post(self, request, *args, **kwargs):
+        entry = services.get_entry(request.user, kwargs["entry_id"])
+        if not entry:
+            raise NotFound("entry not found")
+        new_utc = request.data.get("scheduled_utc")
+        new_tz = request.data.get("timezone")
+        if not new_utc:
+            raise ValidationError("scheduled_utc is required")
+        entry, invalidated = _run(lambda: services.reschedule_entry(request.user, entry, new_utc, new_tz))
+        return ok({"entry": self.get_serializer(entry).data, "invalidated_approvals": invalidated})
+
+
+class ChangePlatformView(GenericAPIView):
+    serializer_class = ScheduledEntrySerializer
+    permission_classes = [HasCapability]
+    capability = "manage_projects"
+    def post(self, request, *args, **kwargs):
+        entry = services.get_entry(request.user, kwargs["entry_id"])
+        if not entry:
+            raise NotFound("entry not found")
+        new_platform = request.data.get("platform")
+        new_sa_id = request.data.get("social_account_id")
+        if not new_platform:
+            raise ValidationError("platform is required")
+        entry, invalidated = _run(lambda: services.change_entry_platform(request.user, entry, new_platform, new_sa_id))
+        return ok({"entry": self.get_serializer(entry).data, "invalidated_approvals": invalidated})
+
+
+class RecheckApprovalsView(GenericAPIView):
+    permission_classes = [HasCapability]
+    capability = "manage_projects"
+    def post(self, request, *args, **kwargs):
+        expired = services.recheck_expired_approvals(request.user)
+        return ok({"expired_count": expired})

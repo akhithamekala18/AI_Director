@@ -163,3 +163,89 @@ def get_publishing_history(user, project):
 def get_pending_approvals(user):
     team_ids = user.memberships.values_list("team_id", flat=True)
     return ScheduledEntry.objects.filter(team_id__in=team_ids, status__in=[ScheduledEntry.Status.READY_FOR_APPROVAL, ScheduledEntry.Status.APPROVAL_INVALIDATED]).select_related("post", "social_account")
+
+
+# --- Task 40: Approval validity & invalidation ---
+
+def reschedule_entry(user, entry, new_scheduled_utc, new_tz_name=None):
+    """Reschedule an entry. Invalidates all existing approvals (PRD Decision 5)."""
+    if entry.status in (ScheduledEntry.Status.UPLOADING, ScheduledEntry.Status.PUBLISHED, ScheduledEntry.Status.CANCELED):
+        raise DjangoValidationError(f"cannot reschedule entry in '{entry.status}' state")
+    entry.scheduled_utc = new_scheduled_utc
+    if new_tz_name:
+        entry.timezone = new_tz_name
+    entry.save()
+    count = invalidate_approvals_for_entry(entry, reason="reschedule")
+    entry.status = ScheduledEntry.Status.READY_FOR_APPROVAL
+    entry.save()
+    _audit(user, "entry_rescheduled", entry=entry, reason=f"invalidated:{count}_approvals")
+    return entry, count
+
+
+def change_entry_platform(user, entry, new_platform, new_social_account_id=None):
+    """Change the platform for an entry. Invalidates all approvals (PRD Decision 5)."""
+    if entry.status in (ScheduledEntry.Status.UPLOADING, ScheduledEntry.Status.PUBLISHED, ScheduledEntry.Status.CANCELED):
+        raise DjangoValidationError(f"cannot change platform for entry in '{entry.status}' state")
+    old_platform = entry.platform
+    entry.platform = new_platform
+    if new_social_account_id:
+        social_account = _get_social_account(user, new_social_account_id)
+        entry.social_account = social_account
+    entry.save()
+    count = invalidate_approvals_for_entry(entry, reason=f"platform_change_{old_platform}_to_{new_platform}")
+    entry.status = ScheduledEntry.Status.READY_FOR_APPROVAL
+    entry.save()
+    _audit(user, "entry_platform_changed", entry=entry, reason=f"invalidated:{count}_approvals")
+    return entry, count
+
+
+def recheck_expired_approvals(user=None):
+    """Re-check all APPROVED entries for expired approvals.
+
+    If an entry's approval has expired, move it back to READY_FOR_APPROVAL.
+    This is the expiry enforcement from PRD Decision 2.
+    """
+    from django.db.models import Q
+    now = dj_tz.now()
+    # Find APPROVED entries where the latest valid approval has expired
+    approved_entries = ScheduledEntry.objects.filter(status=ScheduledEntry.Status.APPROVED)
+    expired_count = 0
+    for entry in approved_entries:
+        valid_approval = Approval.objects.filter(
+            entry=entry, decision=Approval.Decision.APPROVE, invalidated=False
+        ).filter(Q(expires_at__isnull=True) | Q(expires_at__gte=now)).order_by("-granted_at").first()
+        if valid_approval is None:
+            # All approvals expired or invalidated
+            entry.status = ScheduledEntry.Status.READY_FOR_APPROVAL
+            entry.save()
+            _audit(user or entry.post.owner, "approval_expired", entry=entry, reason="all_approvals_expired")
+            expired_count += 1
+    return expired_count
+
+
+def approve_entry_with_payload(user, entry, reason="", payload=None):
+    """Approve an entry with a payload snapshot (PRD: approval bound to payload).
+
+    Stores the payload snapshot on both the approval and the entry.
+    """
+    if entry.status not in (
+        ScheduledEntry.Status.READY_FOR_APPROVAL,
+        ScheduledEntry.Status.APPROVAL_INVALIDATED,
+        ScheduledEntry.Status.REJECTED,
+    ):
+        raise DjangoValidationError(f"cannot approve entry in '{entry.status}' state")
+    # Invalidate previous approvals
+    Approval.objects.filter(
+        entry=entry, invalidated=False, decision=Approval.Decision.APPROVE
+    ).update(invalidated=True, invalidated_at=dj_tz.now())
+    expires_at = _compute_expires_at(entry.scheduled_utc)
+    approval = Approval.objects.create(
+        entry=entry, actor=user, decision=Approval.Decision.APPROVE,
+        reason=reason.strip() if reason else "", expires_at=expires_at,
+    )
+    entry.status = ScheduledEntry.Status.APPROVED
+    if payload:
+        entry.payload_snapshot = payload
+    entry.save()
+    _audit(user, "entry_approved", entry=entry, approval=approval, reason=reason)
+    return approval

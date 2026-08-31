@@ -183,3 +183,150 @@ class TestPublishingHistory:
         resp = auth_client.get(f"/api/projects/{project.id}/publishing/history/")
         assert resp.status_code == 200
         assert len(resp.json()["data"]["history"]) == 1
+
+
+@pytest.mark.django_db
+class TestRescheduleApprovalInvalidation:
+    def test_reschedule_invalidates_approvals(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/",
+            data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "approved"
+        new_utc = (timezone.now() + timedelta(hours=72)).isoformat()
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reschedule/",
+            data={"scheduled_utc": new_utc}, format="json")
+        assert resp.status_code == 200, resp.content
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "ready_for_approval"
+        assert resp.json()["data"]["invalidated_approvals"] >= 1
+
+    def test_reschedule_cannot_reschedule_canceled(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "canceled"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        new_utc = (timezone.now() + timedelta(hours=72)).isoformat()
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reschedule/",
+            data={"scheduled_utc": new_utc}, format="json")
+        assert resp.status_code == 400
+
+    def test_reschedule_requires_valid_status(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "uploading"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        new_utc = (timezone.now() + timedelta(hours=72)).isoformat()
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reschedule/",
+            data={"scheduled_utc": new_utc}, format="json")
+        assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestChangePlatformApprovalInvalidation:
+    def test_change_platform_invalidates_approvals(self, auth_client, scheduled_entry, social_account):
+        from apps.publishing.models import SocialAccount
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/",
+            data={}, format="json")
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "approved"
+        sa2 = SocialAccount.objects.create(
+            owner=auth_client.user, team=social_account.team,
+            platform="TikTok", platform_account_id="tt_999",
+        )
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/change-platform/",
+            data={"platform": "TikTok", "social_account_id": sa2.id}, format="json")
+        assert resp.status_code == 200, resp.content
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "ready_for_approval"
+        assert scheduled_entry.platform == "TikTok"
+        assert resp.json()["data"]["invalidated_approvals"] >= 1
+
+
+@pytest.mark.django_db
+class TestApprovalExpiry:
+    def test_expired_approval_blocks_upload(self, auth_client, scheduled_entry):
+        from apps.publishing.models import Approval
+        scheduled_entry.status = "approved"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        Approval.objects.create(
+            entry=scheduled_entry, actor=auth_client.user,
+            decision="approve",
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/",
+            format="json")
+        assert resp.status_code == 400
+
+    def test_valid_approval_allows_upload(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/",
+            data={}, format="json")
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/upload/",
+            format="json")
+        assert resp.status_code == 200
+
+    def test_recheck_expired_approvals(self, auth_client, scheduled_entry):
+        from apps.publishing.models import Approval
+        scheduled_entry.status = "approved"
+        scheduled_entry.save()
+        Approval.objects.create(
+            entry=scheduled_entry, actor=auth_client.user,
+            decision="approve",
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        resp = auth_client.post("/api/publishing/recheck-approvals/", format="json")
+        assert resp.status_code == 200
+        assert resp.json()["data"]["expired_count"] >= 1
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "ready_for_approval"
+
+
+@pytest.mark.django_db
+class TestRejectionLandsInDraft:
+    def test_rejection_sets_draft(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reject/",
+            data={"reason": "Not ready"}, format="json")
+        assert resp.status_code == 200
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.status == "rejected"
+
+    def test_can_reschedule_after_rejection(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reject/",
+            data={"reason": "Fix needed"}, format="json")
+        new_utc = (timezone.now() + timedelta(hours=72)).isoformat()
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/reschedule/",
+            data={"scheduled_utc": new_utc}, format="json")
+        assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+class TestPayloadSnapshotOnApproval:
+    def test_approve_stores_payload(self, auth_client, scheduled_entry):
+        from apps.publishing.services import approve_entry_with_payload
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        payload = {"title": "Test Video", "description": "A test"}
+        approve_entry_with_payload(auth_client.user, scheduled_entry, payload=payload)
+        scheduled_entry.refresh_from_db()
+        assert scheduled_entry.payload_snapshot == payload
+
+    def test_approve_without_payload(self, auth_client, scheduled_entry):
+        scheduled_entry.status = "ready_for_approval"
+        scheduled_entry.save()
+        proj_id = scheduled_entry.post.project_id
+        resp = auth_client.post(f"/api/projects/{proj_id}/publishing/entries/{scheduled_entry.id}/approve/",
+            data={}, format="json")
+        assert resp.status_code == 200

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.video",
     "apps.thumbnail",
     "apps.preview",
+    "apps.scheduler",
     "django_celery_results",
 ]
 

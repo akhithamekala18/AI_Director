@@ -20,4 +20,5 @@ urlpatterns = [
     path("api/projects/<int:pk>/video/", include("apps.video.urls")),
     path("api/projects/<int:pk>/thumbnail/", include("apps.thumbnail.urls")),
     path("api/projects/<int:pk>/preview/", include("apps.preview.urls")),
+    path("api/projects/<int:pk>/schedule/", include("apps.scheduler.urls")),
 ]

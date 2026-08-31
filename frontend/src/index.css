@@ -1324,3 +1324,139 @@ textarea:focus {
   font-size: 0.85rem;
   line-height: 1.6;
 }
+
+/* ---------------------------------------------------------------------------
+   Scene Media Controls Styles
+   --------------------------------------------------------------------------- */
+
+.media-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.media-summary-item {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  color: var(--color-text-secondary);
+}
+
+.media-scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.media-scene-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.media-scene-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.media-scene-header:hover {
+  background: var(--color-bg);
+}
+
+.media-scene-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.media-scene-order {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  min-width: 28px;
+}
+
+.media-scene-id {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.media-scene-status {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius);
+}
+
+.media-expand {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.media-scene-detail {
+  padding: 0 16px 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.media-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.media-type-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--color-bg);
+}
+
+.media-type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.media-type-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.media-error {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  margin: 4px 0;
+}
+
+.media-asset-ref {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 4px 0;
+}
+
+.media-detail-row {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 4px 0;
+  word-break: break-all;
+}
+
+.media-type-actions {
+  margin-top: 8px;
+}
+
+.media-scene-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}

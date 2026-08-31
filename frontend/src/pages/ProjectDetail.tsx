@@ -336,6 +336,9 @@ export function ProjectDetail() {
             <Link to={`/projects/${projectId}/preview`} className="btn">
               Preview
             </Link>
+            <Link to={`/projects/${projectId}/schedule`} className="btn">
+              Scheduler
+            </Link>
           </div>
         </section>
 

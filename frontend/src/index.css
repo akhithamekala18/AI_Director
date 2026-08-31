@@ -1691,3 +1691,62 @@ textarea:focus {
   font-size: 0.75rem;
 }
 
+/* ---------------------------------------------------------------------------
+   Scheduler + Content Calendar UI (Task 46)
+   --------------------------------------------------------------------------- */
+
+.detail-section-sub {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.best-time-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-top: 6px;
+}
+
+.reschedule-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.reschedule-form label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.calendar-datetime {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+

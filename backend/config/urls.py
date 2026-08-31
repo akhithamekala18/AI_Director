@@ -21,4 +21,6 @@ urlpatterns = [
     path("api/projects/<int:pk>/thumbnail/", include("apps.thumbnail.urls")),
     path("api/projects/<int:pk>/preview/", include("apps.preview.urls")),
     path("api/projects/<int:pk>/schedule/", include("apps.scheduler.urls")),
+    path("api/publishing/", include("apps.publishing.urls")),
+    path("api/projects/<int:pk>/publishing/", include("apps.publishing.project_urls")),
 ]

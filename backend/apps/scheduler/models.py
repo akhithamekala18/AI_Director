@@ -12,7 +12,6 @@ ScheduleEntry stores per-platform scheduling with:
 One entry per (project, platform) pair.
 """
 from django.db import models
-from django.utils import timezone
 
 
 class ScheduleEntry(models.Model):

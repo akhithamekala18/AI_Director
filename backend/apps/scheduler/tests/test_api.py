@@ -2,7 +2,6 @@
 """Scheduler API tests (Task 38)."""
 import pytest
 from rest_framework.test import APIClient
-from apps.scheduler.models import ScheduleEntry
 
 
 def _create_youtube_preview(auth_client, project):

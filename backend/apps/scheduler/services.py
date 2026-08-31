@@ -34,8 +34,8 @@ def _normalize_utc(local_dt, tz_name):
     """Convert a naive/local datetime to timezone-aware UTC."""
     try:
         tz = zoneinfo.ZoneInfo(tz_name)
-    except (KeyError, zoneinfo.ZoneInfoNotFoundError):
-        raise DjangoValidationError(f"Invalid timezone: '{tz_name}'")
+    except (KeyError, zoneinfo.ZoneInfoNotFoundError) as exc:
+        raise DjangoValidationError(f"Invalid timezone: '{tz_name}'") from exc
 
     # If local_dt is naive, attach the timezone
     if dj_tz.is_naive(local_dt):
@@ -129,8 +129,8 @@ def create_entry(user, project, platform, local_datetime_str, tz_name="UTC"):
             local_dt = datetime.fromisoformat(local_datetime_str)
         else:
             local_dt = local_datetime_str
-    except (ValueError, TypeError):
-        raise DjangoValidationError("invalid datetime format")
+    except (ValueError, TypeError) as exc:
+        raise DjangoValidationError("invalid datetime format") from exc
 
     # Normalize to UTC
     utc_dt = _normalize_utc(local_dt, tz_name)
@@ -207,8 +207,8 @@ def reschedule_entry(user, entry, new_local_datetime_str, new_tz_name=None):
             new_local_dt = datetime.fromisoformat(new_local_datetime_str)
         else:
             new_local_dt = new_local_datetime_str
-    except (ValueError, TypeError):
-        raise DjangoValidationError("invalid datetime format")
+    except (ValueError, TypeError) as exc:
+        raise DjangoValidationError("invalid datetime format") from exc
 
     tz = new_tz_name or entry.timezone
     new_utc_dt = _normalize_utc(new_local_dt, tz)
@@ -236,7 +236,7 @@ def reschedule_entry(user, entry, new_local_datetime_str, new_tz_name=None):
         AuditAction.UPDATE.value,
         "schedule_entry",
         entry.id,
-        f"schedule_cancelled_{entry.platform}",
+        f"schedule_rescheduled_{entry.platform}",
     )
 
     return entry

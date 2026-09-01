@@ -21,6 +21,7 @@ import { Preview } from "./pages/Preview";
 import { Scheduler } from "./pages/Scheduler";
 import { PublishingApproval } from "./pages/PublishingApproval";
 import { PublishHistory } from "./pages/PublishHistory";
+import { Analytics } from "./pages/Analytics";
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/projects/:id/approvals" element={<PublishingApproval />} />
             <Route path="/projects/:id/publish-history" element={<PublishHistory />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 

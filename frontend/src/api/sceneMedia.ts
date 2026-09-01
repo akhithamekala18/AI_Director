@@ -107,7 +107,7 @@ export async function requestRegeneration(
   options: { scene_id?: string; media_types?: string[]; full?: boolean },
 ): Promise<{ job: AsyncJob; regeneration: RegenerationRequest | null }> {
   return api.post<{ job: AsyncJob; regeneration: RegenerationRequest | null }>(
-    `/projects/${projectId}/regenerate/regenerate/`,
+    `/projects/${projectId}/regeneration/regenerate/`,
     options,
   );
 }
@@ -115,5 +115,5 @@ export async function requestRegeneration(
 export async function listRegenerations(
   projectId: number,
 ): Promise<RegenerationListResponse> {
-  return api.get<RegenerationListResponse>(`/projects/${projectId}/regenerate/`);
+  return api.get<RegenerationListResponse>(`/projects/${projectId}/regeneration/`);
 }

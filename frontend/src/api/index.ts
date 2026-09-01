@@ -4,3 +4,4 @@ export * from "./projects";
 export * from "./settings";
 export * from "./notifications";
 export * from "./analytics";
+export * from "./governance";

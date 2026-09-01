@@ -1770,4 +1770,46 @@ textarea:focus {
   align-items: flex-start;
 }
 
+/* ---- Publish history UI ---- */
+
+.payload-summary {
+  margin: 4px 0 8px;
+}
+
+.payload-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.payload-summary li {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  padding: 2px 0;
+  word-break: break-word;
+}
+
+/* ---- Notifications UI ---- */
+
+.notification-item.notif-failure .notification-header strong {
+  color: var(--color-danger);
+}
+
+.notification-item.notif-success .notification-header strong {
+  color: var(--color-success, #147d4a);
+}
+
+.notification-item.notif-approval .notification-type,
+.notification-item.notif-failure .notification-type,
+.notification-item.notif-success .notification-type,
+.notification-item.notif-reminder .notification-type,
+.notification-item.notif-team .notification-type,
+.notification-item.notif-status .notification-type {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 

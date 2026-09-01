@@ -57,6 +57,22 @@ export interface RecheckResponse {
   expired_count: number;
 }
 
+export interface RetryStatus {
+  total_attempts: number;
+  successful: number;
+  failed: number;
+  max_attempts: number;
+  retryable: boolean;
+  retry_reason: string | null;
+  next_retry_at: string | null;
+  last_failure_kind?: string | null;
+  last_error?: string | null;
+}
+
+export interface RetryStatusResponse {
+  retry_status: RetryStatus;
+}
+
 // ---------------------------------------------------------------------------
 // Publishing approval API (all project-scoped endpoints live under
 // /projects/<pk>/publishing/; pending + social-account endpoints live under
@@ -108,4 +124,13 @@ export async function getPendingApprovals(): Promise<PendingApprovalsResponse> {
 
 export async function recheckApprovals(): Promise<RecheckResponse> {
   return api.post<RecheckResponse>(`/publishing/recheck-approvals/`, {});
+}
+
+export async function getEntryRetryStatus(
+  projectId: number,
+  entryId: number,
+): Promise<RetryStatusResponse> {
+  return api.get<RetryStatusResponse>(
+    `/projects/${projectId}/publishing/entries/${entryId}/retry-status/`,
+  );
 }

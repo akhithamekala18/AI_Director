@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ai-director-backend"
 version = "0.1.0"
-description = "AI Director backend (Django/DRF) - Phase 1 foundation + Phase 2 AI orchestration"
+description = "AI Director backend (Django/DRF) - AI-powered social media video production platform"
 requires-python = ">=3.11"
 dependencies = [
     "Django>=5.0",
@@ -16,6 +16,9 @@ dependencies = [
     "celery>=5.4",
     "redis>=5.0",
     "django-celery-results>=2.5",
+    "gunicorn>=22.0",
+    "whitenoise>=6.7",
+    "django-cors-headers>=4.4",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +42,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
+"config/settings/production.py" = ["F405", "I001", "UP009"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"

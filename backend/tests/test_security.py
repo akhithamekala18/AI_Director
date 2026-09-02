@@ -304,7 +304,12 @@ class TestSettingsSecurity:
 
     def test_cors_not_wildcard(self):
         from django.conf import settings
-        assert len([m for m in settings.MIDDLEWARE if "cors" in m.lower()]) == 0
+        # CORS middleware is present (production readiness) but must not use wildcard origins
+        cors_middleware = [m for m in settings.MIDDLEWARE if "cors" in m.lower()]
+        if cors_middleware:
+            # If CORS is enabled, CORS_ALLOW_ALL_ORIGINS must be False
+            assert getattr(settings, "CORS_ALLOW_ALL_ORIGINS", False) is False
+            assert getattr(settings, "CORS_ALLOW_ALL_HEADERS", []) == [] or not getattr(settings, "CORS_ALLOW_ALL_ORIGINS", False)
 
 # === 8. Secret Isolation ===
 class TestSecretIsolation:

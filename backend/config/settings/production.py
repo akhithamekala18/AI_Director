@@ -56,6 +56,14 @@ CORS_ALLOW_HEADERS = [
     "accept", "accept-encoding", "authorization", "content-type",
     "dnt", "origin", "user-agent", "x-csrftoken", "x-requested-with",
 ]
+# --- CSRF Trusted Origins ---------------------------------------------------
+
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
+
 
 # --- Database (PostgreSQL required in production) --------------------------
 
@@ -143,6 +151,8 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = [
     "rest_framework.throttling.UserRateThrottle",
 ]
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
-    "anon": "100/hour",
+    "anon": "60/hour",
     "user": "1000/hour",
+    "login": "10/minute",
+    "register": "5/hour",
 }

@@ -65,6 +65,6 @@ def test_same_state_transition_is_rejected():
 
 
 def test_pipeline_index_is_monotonic():
-    indices = [pipeline_index(s) for s in _FORWARD]
+    indices = [pipeline_index(s) for s, _ in _FORWARD]
     assert indices == sorted(indices)
     assert pipeline_index(S.ARCHIVED) is None

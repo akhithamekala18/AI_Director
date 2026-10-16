@@ -64,8 +64,13 @@ export async function getResearchGaps(projectId: number): Promise<ResearchGapsRe
   return api.get<ResearchGapsResponse>(`/projects/${projectId}/research/gaps/`);
 }
 
-export async function approveResearch(projectId: number): Promise<ResearchDetailResponse> {
-  return api.post<ResearchDetailResponse>(`/projects/${projectId}/research/approve/`);
+export async function approveResearch(
+  projectId: number,
+  comment?: string,
+): Promise<ResearchDetailResponse> {
+  const body: Record<string, string> = {};
+  if (comment !== undefined) body.comment = comment;
+  return api.post<ResearchDetailResponse>(`/projects/${projectId}/research/approve/`, body);
 }
 
 export async function requestResearchChanges(projectId: number, reason: string): Promise<ResearchDetailResponse> {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   getResearch,
@@ -36,6 +36,7 @@ export function ResearchReview() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [approvalComment, setApprovalComment] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [submittingRejection, setSubmittingRejection] = useState(false);
 
@@ -77,6 +78,36 @@ export function ResearchReview() {
       setError(err instanceof ApiError ? err.message : "Generation failed");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!research) return;
+    setApproving(true);
+    setError(null);
+    try {
+      const res = await approveResearch(projectId, approvalComment.trim() || undefined);
+      setResearch(res.research);
+    } catch (err) {
+      setError(err instanceof ApiError ? "Approval failed" : "Approval failed");
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleReject = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!research) return;
+    setSubmittingRejection(true);
+    setError(null);
+    try {
+      const res = await requestResearchChanges(projectId, rejectionReason.trim());
+      setResearch(res.research);
+      setRejectionReason("");
+    } catch (err) {
+      setError(err instanceof ApiError ? "Request changes failed" : "Request changes failed");
+    } finally {
+      setSubmittingRejection(false);
     }
   };
 
@@ -192,7 +223,7 @@ export function ResearchReview() {
               >
                 {generating ? "Regenerating..." : "Regenerate"}
               </button>
-              {(research.gate_state === "in_review" || research.gate_state === "revision_requested") && (
+              {(research.gate_state === "review" || research.gate_state === "revision_requested") && (
                 <>
                   <button
                     className="btn btn-primary"
@@ -201,6 +232,15 @@ export function ResearchReview() {
                   >
                     {approving ? "Approving..." : "Approve"}
                   </button>
+                  <div className="approval-comment">
+                    <label htmlFor="approval-comment">In-context approval comment (optional)</label>
+                    <textarea
+                      id="approval-comment"
+                      value={approvalComment}
+                      onChange={(e) => setApprovalComment(e.target.value)}
+                      placeholder="Optional: what made this approval right..."
+                    />
+                  </div>
                   <form className="rejection-form" onSubmit={handleReject}>
                     <label htmlFor="rejection-reason">Rejection Reason</label>
                     <textarea

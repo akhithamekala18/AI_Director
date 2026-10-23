@@ -1,0 +1,52 @@
+# =============================================================================
+# AI Director — Docker Compose (PRODUCTION)
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This override file:
+#   - Removes public port exposure for PostgreSQL, Redis, and backend
+#   - Only Nginx ports (80/443) are publicly accessible
+#   - Adds production-specific configuration
+#
+# TLS bootstrap note:
+#   The nginx config mounted at /etc/nginx/conf.d/default.conf is selected via
+#   ${NGINX_PROD_CONFIG_FILE:-./nginx.prod.conf}. deploy/scripts/setup-ssl.sh
+#   points this at a generated HTTP-only bootstrap config (./certbot/conf/
+#   nginx-bootstrap.conf) before a certificate exists, then at the generated
+#   HTTPS config (./certbot/conf/nginx-prod.conf) after issuance. The default
+#   remains ./nginx.prod.conf (the HTTPS template).
+# =============================================================================
+
+services:
+  # --- PostgreSQL (INTERNAL ONLY) -------------------------------------------
+  postgres:
+    ports: !reset []  # Clear inherited ports (requires Docker Compose v2.24+)
+    # PostgreSQL is only accessible via Docker internal network
+
+  # --- Redis (INTERNAL ONLY) ------------------------------------------------
+  redis:
+    ports: !reset []  # Clear inherited ports (requires Docker Compose v2.24+)
+    # Redis is only accessible via Docker internal network
+
+  # --- Backend (INTERNAL ONLY — accessed via Nginx) -------------------------
+  backend:
+    ports: !reset []  # Clear inherited ports (requires Docker Compose v2.24+)
+    # Backend is only accessible via Nginx reverse proxy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SSL_REDIRECT: "0"
+      DJANGO_SECURE_HSTS_SECONDS: "31536000"
+
+  # --- Frontend/Nginx (PUBLIC — ports 80/443) -------------------------------
+  frontend:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${NGINX_PROD_CONFIG_FILE:-./nginx.prod.conf}:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - static_data:/static:ro
+      - media_data:/media:ro
